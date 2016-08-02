@@ -14,6 +14,16 @@
 
 package org.trustedanalytics.servicebroker.h2o.service;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.when;
+
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRequestData;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
+
 import com.google.common.collect.ImmutableMap;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.junit.Before;
@@ -26,14 +36,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
 
 import java.util.Map;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class H2oProvisionerClientTest {
@@ -44,6 +48,7 @@ public class H2oProvisionerClientTest {
   private static final String INSTANCE_ID = "instanceId";
   private static final Map<String, String> YARN_CONF =
       ImmutableMap.of("key1", "value1", "key2", "value2");
+  private static final String USER_TOKEN = "some-user-token";
 
   private H2oProvisioner h2oProvisioner;
 
@@ -65,11 +70,12 @@ public class H2oProvisionerClientTest {
 
     // arrange
     H2oCredentials expectedCredentials = new H2oCredentials("a", "b", "c", "d");
-    when(h2oRestMock.createH2oInstance(INSTANCE_ID, H2O_NODES, H2O_MEMORY, KERBEROS, YARN_CONF))
+    when(h2oRestMock.createH2oInstance(eq(INSTANCE_ID), eq(H2O_NODES), eq(H2O_MEMORY), eq(KERBEROS),
+        any(H2oProvisionerRequestData.class)))
         .thenReturn(new ResponseEntity<>(expectedCredentials, HttpStatus.OK));
 
     // act
-    H2oCredentials actualCredentials = h2oProvisioner.provisionInstance(INSTANCE_ID);
+    H2oCredentials actualCredentials = h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN);
 
     // assert
     assertThat(actualCredentials, equalTo(expectedCredentials));
@@ -80,11 +86,12 @@ public class H2oProvisionerClientTest {
     // arrange
     expectedException.expect(ServiceBrokerException.class);
     expectedException.expectMessage("Unable to provision h2o for: " + INSTANCE_ID);
-    when(h2oRestMock.createH2oInstance(INSTANCE_ID, H2O_NODES, H2O_MEMORY, KERBEROS, YARN_CONF))
+    when(h2oRestMock.createH2oInstance(eq(INSTANCE_ID), eq(H2O_NODES), eq(H2O_MEMORY), eq(KERBEROS),
+        any(H2oProvisionerRequestData.class)))
         .thenReturn(new ResponseEntity<>(HttpStatus.BAD_REQUEST));
 
     // act
-    h2oProvisioner.provisionInstance(INSTANCE_ID);
+    h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN);
   }
 
   @Test
@@ -92,11 +99,12 @@ public class H2oProvisionerClientTest {
     // arrange
     expectedException.expect(ServiceBrokerException.class);
     expectedException.expectMessage("Unable to provision h2o for: " + INSTANCE_ID);
-    when(h2oRestMock.createH2oInstance(INSTANCE_ID, H2O_NODES, H2O_MEMORY, KERBEROS, YARN_CONF))
+    when(h2oRestMock.createH2oInstance(eq(INSTANCE_ID), eq(H2O_NODES), eq(H2O_MEMORY), eq(KERBEROS),
+        any(H2oProvisionerRequestData.class)))
         .thenThrow(new RestClientException(""));
 
     // act
-    h2oProvisioner.provisionInstance(INSTANCE_ID);
+    h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN);
   }
 
   @Test

@@ -101,7 +101,12 @@ Use cf client :
 ```
 cf create-service-broker h2o-broker <user> <password> https://h2o-broker.<platform_domain>
 cf enable-service-access h2o
-cf cs h2o shared h2o-instance
+cf cs h2o shared h2o-instance -c '{\"userToken\" : \"<ACTUAL USER TOKEN VALUE>\"}'
+```
+
+To easily obtain your user token you can invoke following command:
+```
+cf oauth-token | tail -n +4 | cut -d' ' -f2
 ```
 
 ## Binding broker instance

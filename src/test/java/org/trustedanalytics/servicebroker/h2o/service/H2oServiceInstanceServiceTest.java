@@ -14,6 +14,7 @@
 
 package org.trustedanalytics.servicebroker.h2o.service;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
@@ -25,7 +26,11 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.util.MatcherAssertionErrors.assertThat;
 
-import java.io.IOException;
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
+import org.trustedanalytics.cfbroker.store.api.Location;
+import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
+import org.trustedanalytics.servicebroker.h2o.nats.ServiceMetadata;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
@@ -40,16 +45,14 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.api.Location;
-import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
-import org.trustedanalytics.servicebroker.h2o.nats.ServiceMetadata;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+
+import java.io.IOException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class H2oServiceInstanceServiceTest {
 
   private static final String INSTANCE_ID = "instanceId0";
+  private static final String USER_TOKEN = "fake-user-token";
 
   private H2oServiceInstanceService instanceService;
 
@@ -80,12 +83,12 @@ public class H2oServiceInstanceServiceTest {
   public void createServiceInstance_provisionerAndStoreWorks_instanceCreated() throws Exception {
     // arrange
     CreateServiceInstanceRequest request =
-        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID);
+        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance expectedInstance = new ServiceInstance(request);
     H2oCredentials expectedCredentials = new H2oCredentials("a", "b", "c", "d");
 
     when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
-    when(h2oProvisioner.provisionInstance(INSTANCE_ID)).thenReturn(expectedCredentials);
+    when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN)).thenReturn(expectedCredentials);
     doNothing().when(credentialsStoreMock).save(Location.newInstance(INSTANCE_ID),
         expectedCredentials);
 
@@ -95,9 +98,28 @@ public class H2oServiceInstanceServiceTest {
     // assert
     assertThat(createdInstance, equalTo(expectedInstance));
     verify(delegateMock, timeout(200)).createServiceInstance(request);
-    verify(h2oProvisioner, timeout(200)).provisionInstance(INSTANCE_ID);
+    verify(h2oProvisioner, timeout(200)).provisionInstance(INSTANCE_ID, USER_TOKEN);
     verify(credentialsStoreMock, timeout(200)).save(Location.newInstance(INSTANCE_ID),
         expectedCredentials);
+  }
+
+  @Test
+  public void createServiceInstance_emptyToken_exceptionThrown() throws Exception {
+    //arrange
+    CreateServiceInstanceRequest request =
+            CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, "");
+    ServiceInstance expectedInstance = new ServiceInstance(request);
+    when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
+
+    //act
+    try {
+      instanceService.createServiceInstance(request);
+
+    //assert
+    } catch (Exception e) {
+      assertSame(ServiceBrokerException.class, e.getClass());
+      assertThat(e.getMessage(), containsString("Given user token is empty"));
+    }
   }
 
   @Test
@@ -105,13 +127,13 @@ public class H2oServiceInstanceServiceTest {
       throws Exception {
     // arrange
     CreateServiceInstanceRequest request =
-        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID);
+        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance expectedInstance = new ServiceInstance(request);
     ServiceMetadata expectedMetadata = new ServiceMetadata(INSTANCE_ID,
         request.getParameters().get("name").toString(), request.getOrganizationGuid());
 
     when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
-    when(h2oProvisioner.provisionInstance(INSTANCE_ID)).thenThrow(new ServiceBrokerException(""));
+    when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN)).thenThrow(new ServiceBrokerException(""));
 
     // act
     try {
@@ -132,14 +154,14 @@ public class H2oServiceInstanceServiceTest {
   public void createServiceInstance_storeFails_exceptionThrownAndNatsNotified() throws Exception {
     // arrange
     CreateServiceInstanceRequest request =
-        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID);
+        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance expectedInstance = new ServiceInstance(request);
     H2oCredentials expectedCredentials = new H2oCredentials("a", "b", "c", "d");
     ServiceMetadata expectedMetadata = new ServiceMetadata(INSTANCE_ID,
         request.getParameters().get("name").toString(), request.getOrganizationGuid());
 
     when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
-    when(h2oProvisioner.provisionInstance(INSTANCE_ID)).thenReturn(expectedCredentials);
+    when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN)).thenReturn(expectedCredentials);
     doThrow(new IOException()).when(credentialsStoreMock).save(Location.newInstance(INSTANCE_ID),
         expectedCredentials);
 
@@ -165,14 +187,14 @@ public class H2oServiceInstanceServiceTest {
     H2oServiceInstanceService instanceService2 = new H2oServiceInstanceService(delegateMock,
         h2oProvisioner, credentialsStoreMock, natsNotifierMock, 1);
     CreateServiceInstanceRequest request =
-        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID);
+        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance expectedInstance = new ServiceInstance(request);
     H2oCredentials expectedCredentials = new H2oCredentials("a", "b", "c", "d");
     ServiceMetadata expectedMetadata = new ServiceMetadata(INSTANCE_ID,
         request.getParameters().get("name").toString(), request.getOrganizationGuid());
 
     when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
-    when(h2oProvisioner.provisionInstance(INSTANCE_ID))
+    when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN))
         .thenAnswer(invocation -> returnCredentialsLongRunning(expectedCredentials));
 
     // act

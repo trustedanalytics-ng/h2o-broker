@@ -14,14 +14,12 @@
 
 package org.trustedanalytics.servicebroker.h2o.service;
 
-import java.io.IOException;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
+import org.trustedanalytics.cfbroker.store.api.Location;
+import org.trustedanalytics.cfbroker.store.impl.ForwardingServiceInstanceServiceStore;
+import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
+import org.trustedanalytics.servicebroker.h2o.nats.ServiceMetadata;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceExistsException;
@@ -31,12 +29,17 @@ import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.api.Location;
-import org.trustedanalytics.cfbroker.store.impl.ForwardingServiceInstanceServiceStore;
-import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
-import org.trustedanalytics.servicebroker.h2o.nats.ServiceMetadata;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceStore {
 
@@ -62,15 +65,19 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
 
     ServiceInstance serviceInstance = super.createServiceInstance(request);
     String instanceId = serviceInstance.getServiceInstanceId();
-    // if name not provided use instanceId instead
-    String instanceName =
-        (String) Optional.ofNullable(request.getParameters().get("name")).orElse(instanceId);
+    // if params were not provided
+    Map<String, Object> params = Optional.ofNullable(request.getParameters())
+        .orElse(Collections.emptyMap());
+
+    String instanceName = (String) params.getOrDefault("name", instanceId);
+    String userToken = Optional.ofNullable((String) params.get("userToken")).filter(s -> !s.isEmpty())
+        .orElseThrow(() -> new ServiceBrokerException("Given user token is empty"));
 
     ServiceMetadata service =
         new ServiceMetadata(instanceId, instanceName, serviceInstance.getOrganizationGuid());
     natsNotifier.notifyServiceCreationStarted(service);
 
-    ProvisioningResult provisioningResult = provisionH2o(instanceId);
+    ProvisioningResult provisioningResult = provisionH2o(instanceId, userToken);
 
     switch (provisioningResult.getStatus()) {
       case SUCCESS:
@@ -109,10 +116,10 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
     return serviceInstance;
   }
 
-  private ProvisioningResult provisionH2o(String instanceId) {
+  private ProvisioningResult provisionH2o(String instanceId, String userToken) {
     ExecutorService executor = Executors.newSingleThreadExecutor();
     FutureTask<Object> task =
-        new FutureTask<>(new ProvisioningJob(h2oProvisioner, credentialsStore, instanceId), null);
+        new FutureTask<>(new ProvisioningJob(h2oProvisioner, credentialsStore, instanceId, userToken), null);
     executor.execute(task);
 
     try {
@@ -145,18 +152,20 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
     private final H2oProvisioner h2oProvisioner;
     private final BrokerStore<H2oCredentials> credentialsStore;
     private final String instanceId;
+    private final String userToken;
 
     private ProvisioningJob(H2oProvisioner h2oProvisioner,
-        BrokerStore<H2oCredentials> credentialsStore, String instanceId) {
+        BrokerStore<H2oCredentials> credentialsStore, String instanceId, String userToken) {
       this.h2oProvisioner = h2oProvisioner;
       this.credentialsStore = credentialsStore;
       this.instanceId = instanceId;
+      this.userToken = userToken;
     }
 
     @Override
     public void run() {
       try {
-        H2oCredentials credentials = h2oProvisioner.provisionInstance(instanceId);
+        H2oCredentials credentials = h2oProvisioner.provisionInstance(instanceId, userToken);
 
         saveCredentials(credentials);
         LOGGER.info("Created h2o instance with address '" + credentials.getHostname() + ":"

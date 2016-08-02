@@ -14,17 +14,20 @@
 
 package org.trustedanalytics.servicebroker.h2o.service;
 
-import java.util.Map;
-
+import com.google.common.collect.ImmutableMap;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceRequest;
 
-import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 
 public class CfBrokerRequestsFactory {
-  public static CreateServiceInstanceRequest getCreateInstanceRequest(String serviceInstanceId) {
-    Map<String, Object> createInstanceParams = ImmutableMap.of("name", "test-service-name");
+
+  static final public String FAKE_TOKEN = "not-necessary-character-string";
+
+  public static CreateServiceInstanceRequest getCreateInstanceRequest(String serviceInstanceId, String userToken) {
+    Map<String, Object> createInstanceParams = ImmutableMap.of("name", "test-service-name",
+            "userToken", userToken);
     return new CreateServiceInstanceRequest("serviceDefinitionId", "planId", "organizationGuid",
         "spaceGuid", createInstanceParams).withServiceInstanceId(serviceInstanceId);
   }
@@ -33,7 +36,7 @@ public class CfBrokerRequestsFactory {
       String instanceId, String bindingId) {
 
     return new CreateServiceInstanceBindingRequest(
-        getCreateInstanceRequest(instanceId).getServiceDefinitionId(), "planId", "appGuid")
+        getCreateInstanceRequest(instanceId, FAKE_TOKEN).getServiceDefinitionId(), "planId", "appGuid")
             .withBindingId(bindingId).withServiceInstanceId(instanceId);
   }
 

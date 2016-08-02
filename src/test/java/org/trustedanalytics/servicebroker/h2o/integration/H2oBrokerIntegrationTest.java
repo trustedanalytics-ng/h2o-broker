@@ -14,6 +14,29 @@
 
 package org.trustedanalytics.servicebroker.h2o.integration;
 
+import static com.jayway.awaitility.Awaitility.with;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.util.MatcherAssertionErrors.assertThat;
+
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
+import org.trustedanalytics.cfbroker.store.api.Location;
+import org.trustedanalytics.hadoop.config.ConfigurationHelper;
+import org.trustedanalytics.hadoop.config.ConfigurationHelperImpl;
+import org.trustedanalytics.hadoop.config.ConfigurationLocator;
+import org.trustedanalytics.servicebroker.h2o.Application;
+import org.trustedanalytics.servicebroker.h2o.config.ExternalConfiguration;
+import org.trustedanalytics.servicebroker.h2o.service.CfBrokerRequestsFactory;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRequestData;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
+
 import com.jayway.awaitility.core.ConditionFactory;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
@@ -33,28 +56,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.api.Location;
-import org.trustedanalytics.hadoop.config.ConfigurationHelper;
-import org.trustedanalytics.hadoop.config.ConfigurationHelperImpl;
-import org.trustedanalytics.hadoop.config.ConfigurationLocator;
-import org.trustedanalytics.servicebroker.h2o.Application;
-import org.trustedanalytics.servicebroker.h2o.config.ExternalConfiguration;
-import org.trustedanalytics.servicebroker.h2o.service.CfBrokerRequestsFactory;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
 
 import java.io.IOException;
 import java.util.Map;
-
-import static com.jayway.awaitility.Awaitility.with;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.hamcrest.Matchers.equalTo;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.reset;
-import static org.springframework.test.util.MatcherAssertionErrors.assertThat;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -63,6 +67,7 @@ import static org.springframework.test.util.MatcherAssertionErrors.assertThat;
 @ActiveProfiles("test")
 public class H2oBrokerIntegrationTest {
 
+  final String USER_TOKEN = "some-user-token";
   final H2oCredentials CREDENTIALS = new H2oCredentials("http://h2o.com", "54321", "user", "pass");
 
   @Autowired
@@ -96,13 +101,13 @@ public class H2oBrokerIntegrationTest {
 
     // arrange
     final String INSTANCE_ID = "instanceId0";
-    when(h2oProvisionerRestApi.createH2oInstance(INSTANCE_ID, conf.getH2oMapperNodes(),
-        conf.getH2oMapperMemory(), true, yarnConfig))
+    when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+        eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
             .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
 
     // act
     CreateServiceInstanceRequest request =
-        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID);
+        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance createdInstance = instanceService.createServiceInstance(request);
 
     // assert
@@ -111,21 +116,21 @@ public class H2oBrokerIntegrationTest {
     freeze().until(() -> credentialsStore.getById(Location.newInstance(INSTANCE_ID)).get(),
         equalTo(CREDENTIALS));
 
-    verify(h2oProvisionerRestApi, times(1)).createH2oInstance(INSTANCE_ID, conf.getH2oMapperNodes(),
-        conf.getH2oMapperMemory(), true, yarnConfig);
+    verify(h2oProvisionerRestApi).createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+            eq(conf.getH2oMapperMemory()), eq(true), eq(new H2oProvisionerRequestData(yarnConfig, USER_TOKEN)));
   }
 
   @Test
   public void testDeleteServiceInstance_success_shouldReturnRemovedInstance() throws Exception {
     // arrange
     final String INSTANCE_ID = "instanceId1";
-    when(h2oProvisionerRestApi.createH2oInstance(INSTANCE_ID, conf.getH2oMapperNodes(),
-        conf.getH2oMapperMemory(), true, yarnConfig))
+    when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+        eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
             .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
     when(h2oProvisionerRestApi.deleteH2oInstance(INSTANCE_ID, yarnConfig, true))
         .thenReturn(new ResponseEntity<>("test-job-id", HttpStatus.OK));
     ServiceInstance instance = instanceService
-        .createServiceInstance(CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID));
+        .createServiceInstance(CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN));
 
     // act
     ServiceInstance removedInstance = instanceService
@@ -141,13 +146,13 @@ public class H2oBrokerIntegrationTest {
   public void testDeleteServiceInstance_withoutYarnJob_ShouldReturnRemovedInstance() throws Exception {
     // arrange
     final String INSTANCE_ID = "instanceId2";
-    when(h2oProvisionerRestApi.createH2oInstance(INSTANCE_ID, conf.getH2oMapperNodes(),
-            conf.getH2oMapperMemory(), true, yarnConfig))
+    when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+            eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
             .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
     when(h2oProvisionerRestApi.deleteH2oInstance(INSTANCE_ID, yarnConfig, true))
             .thenReturn(new ResponseEntity<>("Some kind of warning...", HttpStatus.GONE));
     ServiceInstance instance = instanceService
-            .createServiceInstance(CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID));
+            .createServiceInstance(CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN));
 
     // act
     ServiceInstance removedInstance = instanceService
@@ -164,11 +169,11 @@ public class H2oBrokerIntegrationTest {
     // arrange
     final String INSTANCE_ID = "instanceId3";
     final String BINDING_ID = "bindingId3";
-    when(h2oProvisionerRestApi.createH2oInstance(INSTANCE_ID, conf.getH2oMapperNodes(),
-        conf.getH2oMapperMemory(), true, yarnConfig))
+    when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+            eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
             .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
     instanceService
-        .createServiceInstance(CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID));
+        .createServiceInstance(CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN));
     freeze().until(() -> credentialsStore.getById(Location.newInstance(INSTANCE_ID)).isPresent());
 
     // act
@@ -190,12 +195,12 @@ public class H2oBrokerIntegrationTest {
     // arrange
     final String INSTANCE_ID = "instanceId4";
     final String BINDING_ID = "bindingId4";
-    when(h2oProvisionerRestApi.createH2oInstance(INSTANCE_ID, conf.getH2oMapperNodes(),
-        conf.getH2oMapperMemory(), true, yarnConfig))
+    when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+        eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
             .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
 
     CreateServiceInstanceRequest createInstanceReq =
-        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID);
+        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance createdInstance = instanceService.createServiceInstance(createInstanceReq);
     freeze().until(() -> credentialsStore.getById(Location.newInstance(INSTANCE_ID)).isPresent());
 

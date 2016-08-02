@@ -14,11 +14,12 @@
 
 package org.trustedanalytics.servicebroker.h2o.service;
 
-import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
+import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
+
 public interface H2oProvisioner {
-  H2oCredentials provisionInstance(String serviceInstanceId) throws ServiceBrokerException;
+  H2oCredentials provisionInstance(String serviceInstanceId, String userToken) throws ServiceBrokerException;
   String deprovisionInstance(String serviceInstanceId) throws ServiceBrokerException;
 }
 

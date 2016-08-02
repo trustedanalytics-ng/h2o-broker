@@ -14,14 +14,16 @@
 
 package org.trustedanalytics.servicebroker.h2o.service;
 
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRequestData;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
+
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestClientException;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
 
 import java.util.Map;
 
@@ -48,12 +50,14 @@ public class H2oProvisionerClient implements H2oProvisioner {
   }
 
   @Override
-  public H2oCredentials provisionInstance(String serviceInstanceId) throws ServiceBrokerException {
+  public H2oCredentials provisionInstance(String serviceInstanceId, String userToken) throws ServiceBrokerException {
+
+    H2oProvisionerRequestData params = new H2oProvisionerRequestData(yarnConf, userToken);
 
     ResponseEntity<H2oCredentials> h2oCredentialsResponseEntity;
     try {
       h2oCredentialsResponseEntity =
-          h2oRest.createH2oInstance(serviceInstanceId, nodesCount, memory, kerberos, yarnConf);
+          h2oRest.createH2oInstance(serviceInstanceId, nodesCount, memory, kerberos, params);
       LOGGER.info("response: '" + h2oCredentialsResponseEntity.getStatusCode() + "'");
     } catch (RestClientException e) {
       throw new ServiceBrokerException(errorMsg(serviceInstanceId), e);
