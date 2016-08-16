@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>h2o-broker</artifactId>
-	<version>0.5.1</version>
+	<version>0.5.2</version>
 
 	<parent>
 		<groupId>org.trustedanalytics</groupId>
@@ -19,6 +19,8 @@
 		<jacoco-measurement-branches>0.800</jacoco-measurement-branches>
 		<jacoco-measurement-lines>0.800</jacoco-measurement-lines>
 		<jacoco-measurement-classes>0.900</jacoco-measurement-classes>
+		<docker.imageName>${project.artifactId}</docker.imageName>
+		<docker.registry>tapimages.us.enableiot.com:8080</docker.registry>
 	</properties>
 	<scm>
 		<connection>scm:git:git@h2o-broker:trustedanalytics/h2o-broker.git</connection>
@@ -90,6 +92,26 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<configuration>
+					<imageName>${docker.imageName}</imageName>
+					<baseImage>${docker.registry}/tap-base-java:java8-jessie</baseImage>
+					<cmd>["java", "-jar", "/${project.build.finalName}.jar"]</cmd>
+					<resources>
+						<resource>
+							<targetPath>/</targetPath>
+							<directory>${project.build.directory}</directory>
+							<include>${project.build.finalName}.jar</include>
+						</resource>
+					</resources>
+				</configuration>
+				<env>
+					<PORT>80</PORT>
+					<JAVA_OPTS>-Xmx512m</JAVA_OPTS>
+				</env>
 			</plugin>
 		</plugins>
 	</build>
