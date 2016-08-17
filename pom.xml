@@ -100,6 +100,7 @@
 					<imageName>${docker.imageName}</imageName>
 					<baseImage>${docker.registry}/tap-base-java:java8-jessie</baseImage>
 					<cmd>["java", "-jar", "/${project.build.finalName}.jar"]</cmd>
+					<useConfigFile>true</useConfigFile>
 					<resources>
 						<resource>
 							<targetPath>/</targetPath>
@@ -107,11 +108,11 @@
 							<include>${project.build.finalName}.jar</include>
 						</resource>
 					</resources>
+					<env>
+						<PORT>8080</PORT>
+						<JAVA_OPTS>-Xmx512m</JAVA_OPTS>
+					</env>
 				</configuration>
-				<env>
-					<PORT>80</PORT>
-					<JAVA_OPTS>-Xmx512m</JAVA_OPTS>
-				</env>
 			</plugin>
 		</plugins>
 	</build>
