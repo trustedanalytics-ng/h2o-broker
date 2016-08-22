@@ -46,7 +46,7 @@ public class H2oProvisionerClient implements H2oProvisioner {
     this.h2oRest = h2oRest;
 
     LOGGER.info("YARN CONFIG");
-    yarnConf.forEach((k, v) -> LOGGER.info(k + ": " + v));
+    //yarnConf.forEach((k, v) -> LOGGER.info(k + ": " + v));
   }
 
   @Override

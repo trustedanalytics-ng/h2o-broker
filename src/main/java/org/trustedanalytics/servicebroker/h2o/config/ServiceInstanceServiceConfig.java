@@ -14,10 +14,6 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
-import java.io.IOException;
-import java.util.Map;
-
-import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,29 +22,28 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.client.DefaultResponseErrorHandler;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.impl.ServiceInstanceServiceStore;
 import org.trustedanalytics.hadoop.config.ConfigurationHelper;
 import org.trustedanalytics.hadoop.config.ConfigurationHelperImpl;
-import org.trustedanalytics.hadoop.config.ConfigurationLocator;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
 import org.trustedanalytics.servicebroker.h2o.service.H2oProvisioner;
 import org.trustedanalytics.servicebroker.h2o.service.H2oProvisionerClient;
 import org.trustedanalytics.servicebroker.h2o.service.H2oServiceInstanceService;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestClient;
+
+import java.io.IOException;
+import java.util.Map;
 
 @Configuration
 public class ServiceInstanceServiceConfig {
 
   @Bean
-  public ServiceInstanceService getServiceInstanceService(
-      BrokerStore<ServiceInstance> serviceInstanceStore, H2oProvisioner h2oProvisioner,
-      BrokerStore<H2oCredentials> credentialsStore, NatsNotifier natsNotifier,
+  public ServiceInstanceService getServiceInstanceService(H2oProvisioner h2oProvisioner, NatsNotifier natsNotifier,
       ExternalConfiguration config) {
-    return new H2oServiceInstanceService(new ServiceInstanceServiceStore(serviceInstanceStore),
-        h2oProvisioner, credentialsStore, natsNotifier,
+    ExternalConfiguration con = config;
+    H2oProvisioner h2o = h2oProvisioner;
+    return new H2oServiceInstanceService(new ServiceInstanceServiceMock(),
+        h2oProvisioner, natsNotifier,
         Long.valueOf(config.getProvisionerTimeout()));
   }
 
@@ -62,7 +57,7 @@ public class ServiceInstanceServiceConfig {
 
   private Map<String, String> getYarnConf(ExternalConfiguration config) throws IOException {
     ConfigurationHelper confHelper = ConfigurationHelperImpl.getInstance();
-    return confHelper.getConfigurationFromJson(config.getYarnConfig(), ConfigurationLocator.HADOOP);
+    return null;
   }
 
   @Bean

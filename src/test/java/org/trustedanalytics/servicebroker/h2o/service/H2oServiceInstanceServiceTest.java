@@ -18,16 +18,12 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.util.MatcherAssertionErrors.assertThat;
 
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.api.Location;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
 import org.trustedanalytics.servicebroker.h2o.nats.ServiceMetadata;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
@@ -46,7 +42,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.IOException;
 
 @RunWith(MockitoJUnitRunner.class)
 public class H2oServiceInstanceServiceTest {
@@ -62,8 +57,6 @@ public class H2oServiceInstanceServiceTest {
   @Mock
   private H2oProvisioner h2oProvisioner;
 
-  @Mock
-  private BrokerStore<H2oCredentials> credentialsStoreMock;
 
   @Mock
   private NatsNotifier natsNotifierMock;
@@ -75,8 +68,7 @@ public class H2oServiceInstanceServiceTest {
 
   @Before
   public void setup() {
-    instanceService = new H2oServiceInstanceService(delegateMock, h2oProvisioner,
-        credentialsStoreMock, natsNotifierMock, provisionerTimeout);
+    instanceService = new H2oServiceInstanceService(delegateMock, h2oProvisioner, natsNotifierMock, provisionerTimeout);
   }
 
   @Test
@@ -89,8 +81,6 @@ public class H2oServiceInstanceServiceTest {
 
     when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
     when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN)).thenReturn(expectedCredentials);
-    doNothing().when(credentialsStoreMock).save(Location.newInstance(INSTANCE_ID),
-        expectedCredentials);
 
     // act
     ServiceInstance createdInstance = instanceService.createServiceInstance(request);
@@ -99,8 +89,6 @@ public class H2oServiceInstanceServiceTest {
     assertThat(createdInstance, equalTo(expectedInstance));
     verify(delegateMock, timeout(200)).createServiceInstance(request);
     verify(h2oProvisioner, timeout(200)).provisionInstance(INSTANCE_ID, USER_TOKEN);
-    verify(credentialsStoreMock, timeout(200)).save(Location.newInstance(INSTANCE_ID),
-        expectedCredentials);
   }
 
   @Test
@@ -151,41 +139,11 @@ public class H2oServiceInstanceServiceTest {
   }
 
   @Test
-  public void createServiceInstance_storeFails_exceptionThrownAndNatsNotified() throws Exception {
-    // arrange
-    CreateServiceInstanceRequest request =
-        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
-    ServiceInstance expectedInstance = new ServiceInstance(request);
-    H2oCredentials expectedCredentials = new H2oCredentials("a", "b", "c", "d");
-    ServiceMetadata expectedMetadata = new ServiceMetadata(INSTANCE_ID,
-        request.getParameters().get("name").toString(), request.getOrganizationGuid());
-
-    when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
-    when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN)).thenReturn(expectedCredentials);
-    doThrow(new IOException()).when(credentialsStoreMock).save(Location.newInstance(INSTANCE_ID),
-        expectedCredentials);
-
-    // act
-    // assert
-    try {
-      instanceService.createServiceInstance(request);
-
-      // assert
-    } catch (ServiceBrokerException e) {
-      assertSame(ServiceBrokerException.class, e.getClass());
-    }
-    ArgumentCaptor<ServiceMetadata> captor = ArgumentCaptor.forClass(ServiceMetadata.class);
-    verify(natsNotifierMock).notifyServiceCreationStarted(captor.capture());
-    verify(natsNotifierMock).notifyServiceCreationStatus(captor.capture(), any());
-    verifyServiceMetadata(expectedMetadata, captor.getValue());
-  }
-
-  @Test
   public void createServiceInstance_provisionerTimedOut_exceptionThrownAndNatsNotified()
       throws Exception {
     // arrange
     H2oServiceInstanceService instanceService2 = new H2oServiceInstanceService(delegateMock,
-        h2oProvisioner, credentialsStoreMock, natsNotifierMock, 1);
+        h2oProvisioner, natsNotifierMock, 1);
     CreateServiceInstanceRequest request =
         CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance expectedInstance = new ServiceInstance(request);

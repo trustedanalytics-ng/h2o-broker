@@ -15,23 +15,22 @@
 package org.trustedanalytics.servicebroker.h2o.config;
 
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
+import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceBindingRequest;
+import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.impl.ServiceInstanceBindingServiceStore;
-import org.trustedanalytics.servicebroker.h2o.service.H2oServiceInstanceBindingService;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+
 
 @Configuration
-public class ServiceInstanceBindingServiceConfig {
+public class ServiceInstanceBindingServiceMock implements ServiceInstanceBindingService{
 
-  @Bean
-  public ServiceInstanceBindingService getServiceInstanceBindingService(
-      BrokerStore<CreateServiceInstanceBindingRequest> serviceBindingStore,
-      BrokerStore<H2oCredentials> credentialsStore) {
+    @Override
+    public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest request) {
+        return null;
+    }
 
-    return new H2oServiceInstanceBindingService(
-        new ServiceInstanceBindingServiceStore(serviceBindingStore), credentialsStore);
-  }
+    @Override
+    public ServiceInstanceBinding deleteServiceInstanceBinding(DeleteServiceInstanceBindingRequest request) {
+        return null;
+    }
 }
