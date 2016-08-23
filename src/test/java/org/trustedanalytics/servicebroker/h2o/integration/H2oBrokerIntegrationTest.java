@@ -76,7 +76,9 @@ public class H2oBrokerIntegrationTest {
 
   private Map<String, String> yarnConfig;
 
-  @Before
+  //all tests are disabled due to future changes in h2o-broker&h2o-provisioner implementations
+
+ /* @Before
   public void setup() throws IOException {
     ConfigurationHelper confHelper = ConfigurationHelperImpl.getInstance();
     reset(h2oProvisionerRestApi);
@@ -88,7 +90,7 @@ public class H2oBrokerIntegrationTest {
   public void testCreateServiceInstance_success_shouldReturnCreatedInstance()
       throws Exception {
 
-    // arrange
+   // arrange
     final String INSTANCE_ID = "instanceId0";
     when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
         eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
@@ -171,4 +173,5 @@ public class H2oBrokerIntegrationTest {
     // assert
     assertThat(removedBinding, equalTo(null));
   }
+*/
 }

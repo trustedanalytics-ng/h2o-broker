@@ -24,6 +24,7 @@ import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 import org.trustedanalytics.hadoop.config.ConfigurationHelper;
 import org.trustedanalytics.hadoop.config.ConfigurationHelperImpl;
+import org.trustedanalytics.hadoop.config.ConfigurationLocator;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
 import org.trustedanalytics.servicebroker.h2o.service.H2oProvisioner;
 import org.trustedanalytics.servicebroker.h2o.service.H2oProvisionerClient;
@@ -56,7 +57,11 @@ public class ServiceInstanceServiceConfig {
   }
 
   private Map<String, String> getYarnConf(ExternalConfiguration config) throws IOException {
-    ConfigurationHelper confHelper = ConfigurationHelperImpl.getInstance();
+    //while it's not specified where yarn configuration should be stored it returns a default null value
+
+    //ConfigurationHelper confHelper = ConfigurationHelperImpl.getInstance();
+    //return confHelper.getConfigurationFromJson(config.getYarnConfig(), ConfigurationLocator.HADOOP);
+
     return null;
   }
 
