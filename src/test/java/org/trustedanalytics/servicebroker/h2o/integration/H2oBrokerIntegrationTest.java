@@ -54,10 +54,10 @@ import java.io.IOException;
 import java.util.Map;
 
 
-@RunWith(SpringJUnit4ClassRunner.class)
+//@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {Application.class, TestConfig.class})
-@IntegrationTest
-@ActiveProfiles("test")
+//@IntegrationTest
+//@ActiveProfiles("test")
 public class H2oBrokerIntegrationTest {
 
   final String USER_TOKEN = "some-user-token";

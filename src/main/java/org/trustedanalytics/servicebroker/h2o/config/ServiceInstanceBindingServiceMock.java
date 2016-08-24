@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Configuration;
 
 
 @Configuration
-public class ServiceInstanceBindingServiceMock implements ServiceInstanceBindingService{
+public class ServiceInstanceBindingServiceMock implements ServiceInstanceBindingService {
 
     @Override
     public ServiceInstanceBinding createServiceInstanceBinding(CreateServiceInstanceBindingRequest request) {
