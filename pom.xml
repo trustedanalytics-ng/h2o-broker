@@ -96,6 +96,7 @@
 			<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>docker-maven-plugin</artifactId>
+				<version>0.4.12</version>
 				<configuration>
 					<imageName>${docker.imageName}</imageName>
 					<baseImage>${docker.registry}/tap-base-java:java8-jessie</baseImage>
