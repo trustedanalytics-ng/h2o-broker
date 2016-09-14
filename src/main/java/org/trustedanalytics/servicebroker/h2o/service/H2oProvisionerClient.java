@@ -45,10 +45,8 @@ public class H2oProvisionerClient implements H2oProvisioner {
     this.yarnConf = yarnConf;
     this.h2oRest = h2oRest;
 
-    //while it's not specified where yarn configuration should be stored, creating key-value map will be disabled
-
-    //LOGGER.info("YARN CONFIG");
-    //yarnConf.forEach((k, v) -> LOGGER.info(k + ": " + v));
+    LOGGER.info("YARN CONFIG");
+    yarnConf.forEach((k, v) -> LOGGER.info(k + ": " + v));
   }
 
   @Override

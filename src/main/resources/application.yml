@@ -2,25 +2,29 @@ security:
 #password cf client will use when interacting with broker
   user.password: ${USER_PASSWORD:}
 
+zookeeper:
+  metadataNode: /metadata
+  credentialsNode: /credentials
+
 h2o:
   provisioner:
-    url: localhost
-    memory: 512m
-    nodes: 1
-    timeout: 120
+    url: ${vcap.services.h2o-provisioner.credentials.url}
+    memory: ${MAPPER_MEMORY:512m}
+    nodes: ${MAPPER_NODES:1}
+    timeout: ${PROVISIONER_TIMEOUT_SECONDS:120}
 
-yarn.config:
+yarn.config: ${VCAP_SERVICES}
 
 nats:
-  url: nats://localhost:4222
-  serviceCreationTopic:
+  url: ${vcap.services.nats-provider.credentials.url}
+  serviceCreationTopic: ${vcap.services.nats-provider.credentials.service-creation-subject}
 
 cf:
   #name of service in cloud foundry catalog
-  servicename:
+  servicename: ${cf.catalog.servicename:h2o}
   #id of service in cloud foundry catalog
-  serviceid:
-  baseid: e74b9df2-717d-429e-9b1a-0ae6933b9381
+  serviceid: ${cf.catalog.serviceid:h2o}
+  baseid: ${BASE_GUID:}
 
 metadata:
   imageUrl: ${IMAGE_URL:}

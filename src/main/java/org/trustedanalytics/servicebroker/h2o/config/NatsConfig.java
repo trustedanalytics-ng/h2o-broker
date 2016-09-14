@@ -13,7 +13,6 @@
  */
 package org.trustedanalytics.servicebroker.h2o.config;
 
-import nats.client.NatsConnector;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -21,6 +20,7 @@ import org.trustedanalytics.servicebroker.h2o.nats.NatsMessageBuilder;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
 
 import nats.client.Nats;
+import nats.client.NatsConnector;
 
 @Configuration
 @Profile({"cloud", "default"})
