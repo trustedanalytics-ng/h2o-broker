@@ -3,12 +3,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>h2o-broker</artifactId>
-	<version>0.5.2</version>
+	<version>0.5.3</version>
 
 	<parent>
 		<groupId>org.trustedanalytics</groupId>
 		<artifactId>spring-project-template</artifactId>
-		<version>0.5.0</version>
+		<version>0.5.2</version>
 	</parent>
 
 	<properties>
@@ -96,6 +96,7 @@
 			<plugin>
 				<groupId>com.spotify</groupId>
 				<artifactId>docker-maven-plugin</artifactId>
+				<version>0.4.12</version>
 				<configuration>
 					<imageName>${docker.imageName}</imageName>
 					<baseImage>${docker.registry}/tap-base-java:java8-jessie</baseImage>

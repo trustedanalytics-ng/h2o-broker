@@ -14,59 +14,26 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
+import java.io.IOException;
+
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.serialization.JSONSerDeFactory;
-import org.trustedanalytics.cfbroker.store.serialization.RepositoryDeserializer;
-import org.trustedanalytics.cfbroker.store.serialization.RepositorySerializer;
-import org.trustedanalytics.cfbroker.store.zookeeper.service.ZookeeperClient;
-import org.trustedanalytics.cfbroker.store.zookeeper.service.ZookeeperStore;
-
-import java.io.IOException;
+import org.trustedanalytics.servicebroker.h2o.store.MapInMemoryStore;
 
 @Configuration
 public class BrokerStoreConfig {
 
-  @Autowired
-  private ZookeeperClient brokerZKClient;
-
   @Bean
-  public BrokerStore<ServiceInstance> serviceInstanceStore(
-      RepositorySerializer<ServiceInstance> instanceSerializer,
-      RepositoryDeserializer<ServiceInstance> instanceDeserializer) throws IOException {
-    return new ZookeeperStore<>(brokerZKClient, instanceSerializer, instanceDeserializer);
+  public BrokerStore<ServiceInstance> serviceInstanceStore() throws IOException {
+    return new MapInMemoryStore<>();
   }
 
   @Bean
-  public BrokerStore<CreateServiceInstanceBindingRequest> serviceBindingStore(
-      RepositorySerializer<CreateServiceInstanceBindingRequest> bindingSerializer,
-      RepositoryDeserializer<CreateServiceInstanceBindingRequest> bindingDeserializer)
+  public BrokerStore<CreateServiceInstanceBindingRequest> serviceBindingStore()
       throws IOException {
-    return new ZookeeperStore<>(brokerZKClient, bindingSerializer, bindingDeserializer);
-  }
-
-  @Bean
-  public RepositorySerializer<ServiceInstance> instanceSerializer() {
-    return JSONSerDeFactory.getInstance().getSerializer();
-  }
-
-  @Bean
-  public RepositorySerializer<CreateServiceInstanceBindingRequest> bindingSerializer() {
-    return JSONSerDeFactory.getInstance().getSerializer();
-  }
-
-  @Bean
-  public RepositoryDeserializer<ServiceInstance> instanceDeserializer() {
-    return JSONSerDeFactory.getInstance().getDeserializer(ServiceInstance.class);
-  }
-
-  @Bean
-  public RepositoryDeserializer<CreateServiceInstanceBindingRequest> bindingDeserializer() {
-    return JSONSerDeFactory.getInstance()
-        .getDeserializer(CreateServiceInstanceBindingRequest.class);
+    return new MapInMemoryStore<>();
   }
 }

@@ -14,39 +14,19 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.serialization.JSONSerDeFactory;
-import org.trustedanalytics.cfbroker.store.serialization.RepositoryDeserializer;
-import org.trustedanalytics.cfbroker.store.serialization.RepositorySerializer;
-import org.trustedanalytics.cfbroker.store.zookeeper.service.ZookeeperClient;
-import org.trustedanalytics.cfbroker.store.zookeeper.service.ZookeeperStore;
+import org.trustedanalytics.servicebroker.h2o.store.MapInMemoryStore;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
-
-import java.io.IOException;
 
 @Configuration
 public class CredentialsStoreConfig {
 
-  @Autowired
-  private ZookeeperClient credentialsZKClient;
-
   @Bean
-  public BrokerStore<H2oCredentials> credentialsStore(
-      RepositorySerializer<H2oCredentials> h2oSerializer,
-      RepositoryDeserializer<H2oCredentials> h2oDeserializer) throws IOException {
-    return new ZookeeperStore<>(credentialsZKClient, h2oSerializer, h2oDeserializer);
-  }
-
-  @Bean
-  public RepositorySerializer<H2oCredentials> credentialsSerializer() {
-    return JSONSerDeFactory.getInstance().getSerializer();
-  }
-
-  @Bean
-  public RepositoryDeserializer<H2oCredentials> credentialsDeserializer() {
-    return JSONSerDeFactory.getInstance().getDeserializer(H2oCredentials.class);
+  public BrokerStore<H2oCredentials> credentialsStore() throws IOException {
+    return new MapInMemoryStore<>();
   }
 }

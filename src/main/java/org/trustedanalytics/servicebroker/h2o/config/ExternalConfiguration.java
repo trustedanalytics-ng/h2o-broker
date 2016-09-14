@@ -39,14 +39,6 @@ public class ExternalConfiguration {
   @NotNull
   private String cfBaseId;
 
-  @Value("${zookeeper.metadataNode}")
-  @NotNull
-  private String zookeeperMetadataNode;
-
-  @Value("${zookeeper.credentialsNode}")
-  @NotNull
-  private String zookeeperCredentialsNode;
-
   @Value("${h2o.provisioner.url}")
   @NotNull
   private String h2oProvisionerUrl;
