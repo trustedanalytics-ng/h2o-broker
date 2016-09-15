@@ -4,22 +4,22 @@ security:
 
 h2o:
   provisioner:
-    url: ${vcap.services.h2o-provisioner.credentials.url}
-    memory: ${MAPPER_MEMORY:512m}
-    nodes: ${MAPPER_NODES:1}
-    timeout: ${PROVISIONER_TIMEOUT_SECONDS:120}
+    url: localhost
+    memory: 512m
+    nodes: 1
+    timeout: 120
 
-yarn.config: ${VCAP_SERVICES}
+yarn.config: 
 
 nats:
   url: nats://localhost:4222
-  serviceCreationTopic: ${vcap.services.nats-provider.credentials.service-creation-subject}
+  serviceCreationTopic: 
 
 cf:
   #name of service in cloud foundry catalog
-  servicename: ${cf.catalog.servicename:h2o}
+  servicename: 
   #id of service in cloud foundry catalog
-  serviceid: ${cf.catalog.serviceid:h2o}
+  serviceid: 
   baseid: e74b9df2-717d-429e-9b1a-0ae6933b9381
 
 metadata:

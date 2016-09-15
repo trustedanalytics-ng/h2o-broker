@@ -169,8 +169,6 @@ public class H2oServiceInstanceServiceTest {
     // assert
     try {
       instanceService.createServiceInstance(request);
-
-      // assert
     } catch (ServiceBrokerException e) {
       assertSame(ServiceBrokerException.class, e.getClass());
     }
