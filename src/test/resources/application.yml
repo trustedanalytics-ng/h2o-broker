@@ -11,6 +11,14 @@ h2o:
 
 yarn.config: '{"HADOOP_CONFIG_KEY":{}}'
 
+catalog:
+  url: fakeUrl
+  user: fakeUser
+  password: fakePassword
+  hostname_key: hostname
+  login_key: login
+  password_key: password
+
 nats:
   url: fakeUrl
   serviceCreationTopic: fakeTopic

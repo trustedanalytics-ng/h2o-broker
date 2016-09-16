@@ -62,7 +62,7 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
   @Override
   public ServiceInstance createServiceInstance(CreateServiceInstanceRequest request)
       throws ServiceInstanceExistsException, ServiceBrokerException {
-
+    
     ServiceInstance serviceInstance = super.createServiceInstance(request);
     String instanceId = serviceInstance.getServiceInstanceId();
     // if params were not provided
