@@ -14,31 +14,38 @@
 
 package org.trustedanalytics.servicebroker.h2o.integration;
 
+import static com.jayway.awaitility.Awaitility.with;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.util.MatcherAssertionErrors.assertThat;
 
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
+import org.trustedanalytics.cfbroker.store.api.Location;
 import org.trustedanalytics.hadoop.config.ConfigurationHelper;
 import org.trustedanalytics.hadoop.config.ConfigurationHelperImpl;
 import org.trustedanalytics.hadoop.config.ConfigurationLocator;
 import org.trustedanalytics.servicebroker.h2o.Application;
 import org.trustedanalytics.servicebroker.h2o.config.ExternalConfiguration;
 import org.trustedanalytics.servicebroker.h2o.service.CfBrokerRequestsFactory;
-import org.trustedanalytics.servicebroker.h2o.config.ServiceInstanceBindingServiceMock;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRequestData;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
 
+import com.jayway.awaitility.core.ConditionFactory;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.DeleteServiceInstanceRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
+import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceService;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,13 +61,14 @@ import java.io.IOException;
 import java.util.Map;
 
 
-//@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = {Application.class, TestConfig.class})
-//@IntegrationTest
-//@ActiveProfiles("test")
+@IntegrationTest
+@ActiveProfiles("test")
 public class H2oBrokerIntegrationTest {
 
   final String USER_TOKEN = "some-user-token";
+  final H2oCredentials CREDENTIALS = new H2oCredentials("http://h2o.com", "54321", "user", "pass");
 
   @Autowired
   private ExternalConfiguration conf;
@@ -69,16 +77,17 @@ public class H2oBrokerIntegrationTest {
   private ServiceInstanceService instanceService;
 
   @Autowired
-  private ServiceInstanceBindingServiceMock bindingService;
+  private ServiceInstanceBindingService bindingService;
+
+  @Autowired
+  public BrokerStore<H2oCredentials> credentialsStore;
 
   @Autowired
   private H2oProvisionerRestApi h2oProvisionerRestApi;
 
   private Map<String, String> yarnConfig;
 
-  //all tests are disabled due to future changes in h2o-broker&h2o-provisioner implementations
-
- /* @Before
+  @Before
   public void setup() throws IOException {
     ConfigurationHelper confHelper = ConfigurationHelperImpl.getInstance();
     reset(h2oProvisionerRestApi);
@@ -87,14 +96,14 @@ public class H2oBrokerIntegrationTest {
   }
 
   @Test
-  public void testCreateServiceInstance_success_shouldReturnCreatedInstance()
+  public void testCreateServiceInstance_success_shouldReturnCreatedInstanceAndStoreCredentials()
       throws Exception {
 
-   // arrange
+    // arrange
     final String INSTANCE_ID = "instanceId0";
     when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
         eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
-            .thenReturn(new ResponseEntity<>(HttpStatus.OK));
+            .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
 
     // act
     CreateServiceInstanceRequest request =
@@ -102,7 +111,13 @@ public class H2oBrokerIntegrationTest {
     ServiceInstance createdInstance = instanceService.createServiceInstance(request);
 
     // assert
-    assertThat(createdInstance, equalTo(null));
+    assertThat(createdInstance.getServiceInstanceId(), equalTo(INSTANCE_ID));
+
+    freeze().until(() -> credentialsStore.getById(Location.newInstance(INSTANCE_ID)).get(),
+        equalTo(CREDENTIALS));
+
+    verify(h2oProvisionerRestApi).createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+            eq(conf.getH2oMapperMemory()), eq(true), eq(new H2oProvisionerRequestData(yarnConfig, USER_TOKEN)));
   }
 
   @Test
@@ -111,7 +126,7 @@ public class H2oBrokerIntegrationTest {
     final String INSTANCE_ID = "instanceId1";
     when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
         eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
-            .thenReturn(new ResponseEntity<>(HttpStatus.OK));
+            .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
     when(h2oProvisionerRestApi.deleteH2oInstance(INSTANCE_ID, yarnConfig, true))
         .thenReturn(new ResponseEntity<>("test-job-id", HttpStatus.OK));
     ServiceInstance instance = instanceService
@@ -119,10 +134,12 @@ public class H2oBrokerIntegrationTest {
 
     // act
     ServiceInstance removedInstance = instanceService
-        .deleteServiceInstance(new DeleteServiceInstanceRequest(INSTANCE_ID, INSTANCE_ID, INSTANCE_ID));
+        .deleteServiceInstance(new DeleteServiceInstanceRequest(instance.getServiceInstanceId(),
+            instance.getServiceDefinitionId(), instance.getPlanId()));
 
     // assert
-    assertThat(null, equalTo(removedInstance));
+    verify(h2oProvisionerRestApi, times(1)).deleteH2oInstance(INSTANCE_ID, yarnConfig, true);
+    assertThat(instance.getServiceInstanceId(), equalTo(removedInstance.getServiceInstanceId()));
   }
 
   @Test
@@ -131,7 +148,7 @@ public class H2oBrokerIntegrationTest {
     final String INSTANCE_ID = "instanceId2";
     when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
             eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
-            .thenReturn(new ResponseEntity<>(HttpStatus.OK));
+            .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
     when(h2oProvisionerRestApi.deleteH2oInstance(INSTANCE_ID, yarnConfig, true))
             .thenReturn(new ResponseEntity<>("Some kind of warning...", HttpStatus.GONE));
     ServiceInstance instance = instanceService
@@ -139,12 +156,39 @@ public class H2oBrokerIntegrationTest {
 
     // act
     ServiceInstance removedInstance = instanceService
-        .deleteServiceInstance(new DeleteServiceInstanceRequest(INSTANCE_ID, INSTANCE_ID, INSTANCE_ID));
+        .deleteServiceInstance(new DeleteServiceInstanceRequest(instance.getServiceInstanceId(),
+            instance.getServiceDefinitionId(), instance.getPlanId()));
 
     // assert
-    assertThat(null, equalTo(removedInstance));
+    verify(h2oProvisionerRestApi, times(1)).deleteH2oInstance(INSTANCE_ID, yarnConfig, true);
+    assertThat(instance.getServiceInstanceId(), equalTo(removedInstance.getServiceInstanceId()));
   }
 
+  @Test
+  public void testCreateInstanceAndBinding_success_shouldReturnCredentialsMap() throws Exception {
+    // arrange
+    final String INSTANCE_ID = "instanceId3";
+    final String BINDING_ID = "bindingId3";
+    when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
+            eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
+            .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
+    instanceService
+        .createServiceInstance(CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN));
+    freeze().until(() -> credentialsStore.getById(Location.newInstance(INSTANCE_ID)).isPresent());
+
+    // act
+    CreateServiceInstanceBindingRequest request =
+        CfBrokerRequestsFactory.getCreateServiceBindingRequest(INSTANCE_ID, BINDING_ID);
+    ServiceInstanceBinding createdBinding = bindingService.createServiceInstanceBinding(request);
+
+    // assert
+    Map<String, Object> credentials = createdBinding.getCredentials();
+    assertThat(createdBinding.getServiceInstanceId(), equalTo(INSTANCE_ID));
+    assertThat(credentials.get("hostname"), equalTo("http://h2o.com"));
+    assertThat(credentials.get("port"), equalTo("54321"));
+    assertThat(credentials.get("username"), equalTo("user"));
+    assertThat(credentials.get("password"), equalTo("pass"));
+  }
 
   @Test
   public void testDeleteServiceBinding_success_shouldReturnRemovedInstance() throws Exception {
@@ -153,11 +197,12 @@ public class H2oBrokerIntegrationTest {
     final String BINDING_ID = "bindingId4";
     when(h2oProvisionerRestApi.createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
         eq(conf.getH2oMapperMemory()), eq(true), any(H2oProvisionerRequestData.class)))
-            .thenReturn(new ResponseEntity<>(HttpStatus.OK));
+            .thenReturn(new ResponseEntity<>(CREDENTIALS, HttpStatus.OK));
 
     CreateServiceInstanceRequest createInstanceReq =
         CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance createdInstance = instanceService.createServiceInstance(createInstanceReq);
+    freeze().until(() -> credentialsStore.getById(Location.newInstance(INSTANCE_ID)).isPresent());
 
     CreateServiceInstanceBindingRequest bindReq =
         CfBrokerRequestsFactory.getCreateServiceBindingRequest(INSTANCE_ID, BINDING_ID);
@@ -171,7 +216,10 @@ public class H2oBrokerIntegrationTest {
     ServiceInstanceBinding removedBinding = bindingService.deleteServiceInstanceBinding(request);
 
     // assert
-    assertThat(removedBinding, equalTo(null));
+    assertThat(removedBinding.getId(), equalTo(BINDING_ID));
   }
-*/
+
+  private static ConditionFactory freeze() {
+    return with().pollInterval(30, MILLISECONDS).await().atMost(200, MILLISECONDS);
+  }
 }
