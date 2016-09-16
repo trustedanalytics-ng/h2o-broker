@@ -9,7 +9,7 @@ h2o:
     nodes: 1
     timeout: 120
 
-yarn.config: 
+yarn.config: ${YARN_CONFIG:{"HADOOP_CONFIG_KEY":{}}}
 
 nats:
   url: nats://localhost:4222
