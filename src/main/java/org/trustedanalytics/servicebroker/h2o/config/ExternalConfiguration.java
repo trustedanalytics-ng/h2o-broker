@@ -70,4 +70,28 @@ public class ExternalConfiguration {
   @Value("${nats.serviceCreationTopic}")
   @NotNull
   private String natsServiceCreationTopic;
+  
+  @Value("${catalog.url}")
+  @NotNull
+  private String catalogUrl;
+  
+  @Value("${catalog.user}")
+  @NotNull
+  private String catalogUser;
+
+  @Value("${catalog.password}")
+  @NotNull
+  private String catalogPassword;
+
+  @Value("${catalog.hostname_key}")
+  @NotNull
+  private String catalogHostnameKey;
+  
+  @Value("${catalog.login_key}")
+  @NotNull
+  private String catalogLoginKey;
+  
+  @Value("${catalog.password_key}")
+  @NotNull
+  private String catalogPasswordKey;
 }

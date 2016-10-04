@@ -16,13 +16,19 @@ package org.trustedanalytics.servicebroker.h2o.integration;
 
 import static org.mockito.Mockito.mock;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import java.io.IOException;
+
+import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
+import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
 import org.trustedanalytics.servicebroker.h2o.config.ExternalConfiguration;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsMessageBuilder;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
+import org.trustedanalytics.servicebroker.h2o.store.MapInMemoryStore;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
 
 import nats.client.Nats;
@@ -30,9 +36,6 @@ import nats.client.Nats;
 @Configuration
 @Profile("test")
 public class TestConfig {
-
-  @Autowired
-  private ExternalConfiguration config;
 
   @Bean
   public H2oProvisionerRestApi h2oProvisionerRestApi() {
@@ -43,7 +46,7 @@ public class TestConfig {
   public boolean isKerberosEnabled() {
     return true;
   }
- 
+
   @Bean
   public Nats natsClient(ExternalConfiguration config) {
     return mock(Nats.class);
@@ -53,9 +56,24 @@ public class TestConfig {
   public String natsServiceCreationTopic(ExternalConfiguration config) {
     return config.getNatsServiceCreationTopic();
   }
-  
+
   @Bean
   public NatsNotifier natsNotifier(Nats natsClient, String natsServiceCreationTopic) {
     return new NatsNotifier(natsClient, natsServiceCreationTopic, new NatsMessageBuilder());
+  }
+
+  @Bean
+  public BrokerStore<ServiceInstance> serviceInstanceStore() throws IOException {
+    return new MapInMemoryStore<>();
+  }
+
+  @Bean
+  public BrokerStore<CreateServiceInstanceBindingRequest> serviceBindingStore() throws IOException {
+    return new MapInMemoryStore<>();
+  }
+
+  @Bean
+  public BrokerStore<H2oCredentials> credentialsStore() throws IOException {
+    return new MapInMemoryStore<>();
   }
 }
