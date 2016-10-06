@@ -50,7 +50,7 @@ public class ExternalConfiguration {
   @Value("${h2o.provisioner.nodes}")
   @NotNull
   private String h2oMapperNodes;
-  
+
   @Value("${h2o.provisioner.timeout}")
   @NotNull
   private String provisionerTimeout;
@@ -62,19 +62,19 @@ public class ExternalConfiguration {
   @Value("${yarn.config}")
   @NotNull
   private String yarnConfig;
-  
+
   @Value("${nats.url}")
   @NotNull
   private String natsUrl;
-  
+
   @Value("${nats.serviceCreationTopic}")
   @NotNull
   private String natsServiceCreationTopic;
-  
+
   @Value("${catalog.url}")
   @NotNull
   private String catalogUrl;
-  
+
   @Value("${catalog.user}")
   @NotNull
   private String catalogUser;
@@ -86,12 +86,16 @@ public class ExternalConfiguration {
   @Value("${catalog.hostname_key}")
   @NotNull
   private String catalogHostnameKey;
-  
+
   @Value("${catalog.login_key}")
   @NotNull
   private String catalogLoginKey;
-  
+
   @Value("${catalog.password_key}")
   @NotNull
   private String catalogPasswordKey;
+
+  public String getCatalogUrl() {
+    return catalogUrl.startsWith("http://") ? catalogUrl : "http://" + catalogUrl;
+  }
 }
