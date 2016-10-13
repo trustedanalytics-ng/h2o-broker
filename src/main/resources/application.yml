@@ -21,7 +21,7 @@ catalog:
 
 nats:
   url: nats://localhost:4222
-  serviceCreationTopic:
+  serviceCreationTopic: ${NATS_SERVICE_CREATION_TOPIC:platform.create-service}
 
 cf:
   #name of service in cloud foundry catalog
