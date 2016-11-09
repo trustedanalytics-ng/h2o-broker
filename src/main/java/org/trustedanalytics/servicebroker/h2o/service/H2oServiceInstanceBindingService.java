@@ -14,15 +14,16 @@
 
 package org.trustedanalytics.servicebroker.h2o.service;
 
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
+import org.trustedanalytics.cfbroker.store.api.Location;
+import org.trustedanalytics.cfbroker.store.impl.ForwardingServiceInstanceBindingServiceStore;
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceBindingExistsException;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstanceBinding;
 import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.api.Location;
-import org.trustedanalytics.cfbroker.store.impl.ForwardingServiceInstanceBindingServiceStore;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
 import java.io.IOException;
 import java.util.Map;

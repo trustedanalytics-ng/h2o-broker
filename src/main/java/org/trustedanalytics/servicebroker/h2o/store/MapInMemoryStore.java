@@ -13,13 +13,13 @@
  */
 package org.trustedanalytics.servicebroker.h2o.store;
 
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
+import org.trustedanalytics.cfbroker.store.api.Location;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.cfbroker.store.api.Location;
 
 public class MapInMemoryStore<T> implements BrokerStore<T> {
   

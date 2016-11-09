@@ -14,13 +14,12 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
-import javax.validation.constraints.NotNull;
-
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
-import lombok.Getter;
-import lombok.Setter;
+import javax.validation.constraints.NotNull;
 
 @Configuration
 @Getter
@@ -83,6 +82,18 @@ public class ExternalConfiguration {
   @NotNull
   private String catalogPassword;
 
+  @Value("${containerbroker.url}")
+  @NotNull
+  private String containerbrokerUrl;
+
+  @Value("${containerbroker.user}")
+  @NotNull
+  private String containerbrokerUser;
+
+  @Value("${containerbroker.password}")
+  @NotNull
+  private String containerbrokerPassword;
+
   @Value("${catalog.hostname_key}")
   @NotNull
   private String catalogHostnameKey;
@@ -95,7 +106,15 @@ public class ExternalConfiguration {
   @NotNull
   private String catalogPasswordKey;
 
+  public static String getUrlWithHttpProtocol(String url) {
+    return url.toLowerCase().matches("^http.?:.*$") ? url : "http://" + url;
+  }
+
   public String getCatalogUrl() {
-    return catalogUrl.startsWith("http://") ? catalogUrl : "http://" + catalogUrl;
+    return getUrlWithHttpProtocol(catalogUrl);
+  }
+
+  public String getContainerbrokerUrl() {
+    return getUrlWithHttpProtocol(containerbrokerUrl);
   }
 }

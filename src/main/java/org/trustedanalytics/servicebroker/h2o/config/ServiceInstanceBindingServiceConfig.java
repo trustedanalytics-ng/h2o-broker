@@ -14,14 +14,15 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
-import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
-import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.trustedanalytics.cfbroker.store.api.BrokerStore;
 import org.trustedanalytics.cfbroker.store.impl.ServiceInstanceBindingServiceStore;
 import org.trustedanalytics.servicebroker.h2o.service.H2oServiceInstanceBindingService;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+
+import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
+import org.cloudfoundry.community.servicebroker.service.ServiceInstanceBindingService;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ServiceInstanceBindingServiceConfig {

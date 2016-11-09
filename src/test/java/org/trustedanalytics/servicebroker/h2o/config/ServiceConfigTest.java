@@ -14,6 +14,9 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,9 +26,6 @@ import org.springframework.mock.http.client.MockClientHttpResponse;
 import org.springframework.web.client.ResponseErrorHandler;
 
 import java.io.IOException;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ServiceConfigTest {

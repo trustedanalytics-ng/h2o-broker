@@ -19,8 +19,12 @@ import org.trustedanalytics.cfbroker.store.api.Location;
 import org.trustedanalytics.cfbroker.store.impl.ForwardingServiceInstanceServiceStore;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
 import org.trustedanalytics.servicebroker.h2o.nats.ServiceMetadata;
+import org.trustedanalytics.servicebroker.h2o.tapcontainerbroker.ContainerBrokerOperations;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
 import org.cloudfoundry.community.servicebroker.exception.ServiceInstanceExistsException;
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceRequest;
@@ -31,6 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -47,14 +55,20 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
   private final long provisionerTimeout;
   private final H2oProvisioner h2oProvisioner;
   private final BrokerStore<H2oCredentials> credentialsStore;
+  private final ContainerBrokerOperations containerBrokerOperations;
   private final NatsNotifier natsNotifier;
 
-  public H2oServiceInstanceService(ServiceInstanceService delegate, H2oProvisioner h2oProvisioner,
-      BrokerStore<H2oCredentials> credentialsStore, NatsNotifier natsNotifier,
+  public H2oServiceInstanceService(
+      ServiceInstanceService delegate,
+      H2oProvisioner h2oProvisioner,
+      BrokerStore<H2oCredentials> credentialsStore,
+      ContainerBrokerOperations containerBrokerOperations,
+      NatsNotifier natsNotifier,
       long provisionerTimeout) {
     super(delegate);
     this.h2oProvisioner = h2oProvisioner;
     this.credentialsStore = credentialsStore;
+    this.containerBrokerOperations = containerBrokerOperations;
     this.natsNotifier = natsNotifier;
     this.provisionerTimeout = provisionerTimeout;
   }
@@ -69,7 +83,7 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
     Map<String, Object> params = Optional.ofNullable(request.getParameters())
         .orElse(Collections.emptyMap());
 
-    String instanceName = (String) params.getOrDefault("name", instanceId);
+    String instanceName = (String) params.getOrDefault("name", "h2o-" + instanceId);
     String userToken = Optional.ofNullable((String) params.get("userToken")).filter(s -> !s.isEmpty())
         .orElseThrow(() -> new ServiceBrokerException("Given user token is empty"));
 
@@ -77,7 +91,7 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
         new ServiceMetadata(instanceId, instanceName, serviceInstance.getOrganizationGuid());
     natsNotifier.notifyServiceCreationStarted(service);
 
-    ProvisioningResult provisioningResult = provisionH2o(instanceId, userToken);
+    ProvisioningResult provisioningResult = provisionH2o(instanceId, instanceName, userToken);
 
     switch (provisioningResult.getStatus()) {
       case SUCCESS:
@@ -112,14 +126,23 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
     String serviceInstanceId = serviceInstance.getServiceInstanceId();
 
     String killedJob = h2oProvisioner.deprovisionInstance(serviceInstanceId);
+    try {
+      containerBrokerOperations.deleteExpose(serviceInstanceId);
+      LOGGER.info("Removed exposing service: serviceId={}", serviceInstanceId);
+    } catch (Exception e) {
+      throw new ServiceBrokerException(e);
+    }
+
     LOGGER.info("Killed YARN job: " + killedJob + " for H2O instance " + serviceInstanceId);
     return serviceInstance;
   }
 
-  private ProvisioningResult provisionH2o(String instanceId, String userToken) {
+  private ProvisioningResult provisionH2o(
+      String instanceId, String instanceName, String userToken) {
     ExecutorService executor = Executors.newSingleThreadExecutor();
     FutureTask<Object> task =
-        new FutureTask<>(new ProvisioningJob(h2oProvisioner, credentialsStore, instanceId, userToken), null);
+        new FutureTask<>(new ProvisioningJob(h2oProvisioner, credentialsStore,
+            containerBrokerOperations, instanceId, instanceName, userToken), null);
     executor.execute(task);
 
     try {
@@ -151,14 +174,23 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
     private static final Logger LOGGER = LoggerFactory.getLogger(ProvisioningJob.class);
     private final H2oProvisioner h2oProvisioner;
     private final BrokerStore<H2oCredentials> credentialsStore;
+    private final ContainerBrokerOperations containerBrokerOperations;
     private final String instanceId;
+    private final String instanceName;
     private final String userToken;
 
-    private ProvisioningJob(H2oProvisioner h2oProvisioner,
-        BrokerStore<H2oCredentials> credentialsStore, String instanceId, String userToken) {
+    private ProvisioningJob(
+        H2oProvisioner h2oProvisioner,
+        BrokerStore<H2oCredentials> credentialsStore,
+        ContainerBrokerOperations containerBrokerOperations,
+        String instanceId,
+        String instanceName,
+        String userToken) {
       this.h2oProvisioner = h2oProvisioner;
       this.credentialsStore = credentialsStore;
+      this.containerBrokerOperations = containerBrokerOperations;
       this.instanceId = instanceId;
+      this.instanceName = instanceName;
       this.userToken = userToken;
     }
 
@@ -168,6 +200,7 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
         H2oCredentials credentials = h2oProvisioner.provisionInstance(instanceId, userToken);
 
         saveCredentials(credentials);
+        addExposedInstance(credentials);
         LOGGER.info("Created h2o instance with address '" + credentials.getHostname() + ":"
             + credentials.getPort() + "'");
       } catch (IOException | ServiceBrokerException e) {
@@ -177,6 +210,42 @@ public class H2oServiceInstanceService extends ForwardingServiceInstanceServiceS
 
     private void saveCredentials(H2oCredentials credentials) throws IOException {
       credentialsStore.save(Location.newInstance(instanceId), credentials);
+    }
+
+    private void addExposedInstance(H2oCredentials credentials) throws ServiceBrokerException {
+      String hostname = credentials.getHostname();
+      String instanceIpAddress;
+      try {
+        String host = new URI(hostname).getHost();
+        // Check whether this is a valid IP address
+        InetAddress.getAllByName(host);
+        instanceIpAddress = host;
+      } catch (UnknownHostException | URISyntaxException e) {
+        LOGGER.error("Unable to extract IP address from hostname: {}", hostname);
+        throw new ServiceBrokerException(e);
+      }
+
+      int instanceIpPort = Integer.parseInt(credentials.getPort());
+
+      String addExposeBody = createAddExposeBody(instanceIpAddress, instanceIpPort);
+
+      LOGGER.info("Exposing service: serviceId={}, port={}, hostname={}, ip={}",
+          instanceId, instanceIpPort, instanceName, instanceIpAddress);
+      LOGGER.debug("AddExposeBody: {}", addExposeBody);
+      containerBrokerOperations.addExpose(instanceId, addExposeBody);
+    }
+
+    private String createAddExposeBody(String instanceIpAddress, int instanceIpPort) {
+      ObjectMapper objMapper = new ObjectMapper();
+      ObjectNode mainNode = objMapper.createObjectNode();
+
+      ArrayNode portsNode = mainNode.putArray("ports");
+      portsNode.add(instanceIpPort);
+
+      mainNode.put("hostname", instanceName);
+      mainNode.put("ip", instanceIpAddress);
+
+      return mainNode.toString();
     }
   }
 }

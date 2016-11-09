@@ -13,12 +13,10 @@
  */
 package org.trustedanalytics.servicebroker.h2o.nats;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import nats.client.Nats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import nats.client.Nats;
 
 public class NatsNotifier {
 

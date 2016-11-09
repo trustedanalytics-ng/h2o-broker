@@ -16,22 +16,23 @@ package org.trustedanalytics.servicebroker.h2o.integration;
 
 import static org.mockito.Mockito.mock;
 
-import java.io.IOException;
-
-import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
-import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.trustedanalytics.cfbroker.store.api.BrokerStore;
 import org.trustedanalytics.servicebroker.h2o.config.ExternalConfiguration;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsMessageBuilder;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
 import org.trustedanalytics.servicebroker.h2o.store.MapInMemoryStore;
+import org.trustedanalytics.servicebroker.h2o.tapcontainerbroker.ContainerBrokerOperations;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
 
 import nats.client.Nats;
+import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
+import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
+
+import java.io.IOException;
 
 @Configuration
 @Profile("test")
@@ -75,5 +76,10 @@ public class TestConfig {
   @Bean
   public BrokerStore<H2oCredentials> credentialsStore() throws IOException {
     return new MapInMemoryStore<>();
+  }
+
+  @Bean
+  public ContainerBrokerOperations containerBrokerOperations() {
+    return new ContainerBrokerMock();
   }
 }

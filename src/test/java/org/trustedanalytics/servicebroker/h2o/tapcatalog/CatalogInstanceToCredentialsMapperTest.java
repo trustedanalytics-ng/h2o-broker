@@ -14,16 +14,18 @@
 package org.trustedanalytics.servicebroker.h2o.tapcatalog;
 
 import static org.junit.Assert.assertEquals;
-import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder.HOSTNAME_KEY;
-import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder.PASSWORD_KEY;
-import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder.USER_KEY;
+import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder
+    .HOSTNAME_KEY;
+import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder
+    .PASSWORD_KEY;
+import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder
+    .USER_KEY;
+
+import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogInstanceToCredentialsMapper;
-import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstance;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
 public class CatalogInstanceToCredentialsMapperTest {
 

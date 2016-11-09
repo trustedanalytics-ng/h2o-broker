@@ -13,11 +13,6 @@
  */
 package org.trustedanalytics.servicebroker.h2o.store;
 
-import java.io.IOException;
-import java.util.Optional;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.trustedanalytics.cfbroker.store.api.BrokerStore;
 import org.trustedanalytics.cfbroker.store.api.Location;
 import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogInstanceToCredentialsMapper;
@@ -28,6 +23,11 @@ import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Optional;
 
 public class CatalogStore implements BrokerStore<H2oCredentials> {
 

@@ -16,9 +16,6 @@ package org.trustedanalytics.servicebroker.h2o.tapcatalog;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstance;
-import org.trustedanalytics.servicebroker.h2o.tapcatalog.InstanceMetadata;
-
 public class CatalogServiceInstanceBuilder {
   
   public static final String HOSTNAME_KEY = "hostname";

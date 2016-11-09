@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2015 Intel Corporation
+ * Copyright (c) 2016 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,11 +13,7 @@
  */
 package org.trustedanalytics.servicebroker.h2o.config;
 
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.servicebroker.h2o.store.CatalogStore;
-import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogInstanceToCredentialsMapper;
-import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogOperations;
-import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+import org.trustedanalytics.servicebroker.h2o.tapcontainerbroker.ContainerBrokerOperations;
 
 import feign.Feign;
 import feign.Logger;
@@ -31,32 +27,22 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-import java.io.IOException;
-
 @Configuration
 @Profile({"cloud", "default"})
-public class CredentialsStoreConfig {
+public class ContainerBrokerOperationsConfig {
 
   @Autowired
   private ExternalConfiguration configuration;
 
   @Bean
-  public BrokerStore<H2oCredentials> credentialsStore(CatalogOperations catalogOperations)
-      throws IOException {
-    return new CatalogStore(catalogOperations,
-        new CatalogInstanceToCredentialsMapper(configuration.getCatalogLoginKey(),
-            configuration.getCatalogPasswordKey(), configuration.getCatalogHostnameKey()));
-  }
-
-  @Bean
-  public CatalogOperations catalogOperations() {
+  public ContainerBrokerOperations containerBrokerOperations() {
 
     return Feign.builder().decoder(new JacksonDecoder())
-        .logger(new Slf4jLogger(CredentialsStoreConfig.class))
+        .logger(new Slf4jLogger(ContainerBrokerOperationsConfig.class))
         .options(new Request.Options(30 * 1000, 10 * 1000)).logLevel(Logger.Level.BASIC)
-        .requestInterceptor(new BasicAuthRequestInterceptor(configuration.getCatalogUser(),
-            configuration.getCatalogPassword()))
+        .requestInterceptor(new BasicAuthRequestInterceptor(configuration.getContainerbrokerUser(),
+            configuration.getContainerbrokerPassword()))
         .client(new OkHttpClient())
-        .target(CatalogOperations.class, configuration.getCatalogUrl());
+        .target(ContainerBrokerOperations.class, configuration.getContainerbrokerUrl());
   }
 }

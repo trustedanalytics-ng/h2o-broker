@@ -33,6 +33,7 @@ import org.trustedanalytics.hadoop.config.ConfigurationLocator;
 import org.trustedanalytics.servicebroker.h2o.Application;
 import org.trustedanalytics.servicebroker.h2o.config.ExternalConfiguration;
 import org.trustedanalytics.servicebroker.h2o.service.CfBrokerRequestsFactory;
+import org.trustedanalytics.servicebroker.h2o.tapcontainerbroker.ContainerBrokerOperations;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRequestData;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oProvisionerRestApi;
@@ -68,7 +69,7 @@ import java.util.Map;
 public class H2oBrokerIntegrationTest {
 
   final String USER_TOKEN = "some-user-token";
-  final H2oCredentials CREDENTIALS = new H2oCredentials("http://h2o.com", "54321", "user", "pass");
+  final H2oCredentials CREDENTIALS = new H2oCredentials("http://10.0.0.1", "54321", "user", "pass");
 
   @Autowired
   private ExternalConfiguration conf;
@@ -83,9 +84,14 @@ public class H2oBrokerIntegrationTest {
   public BrokerStore<H2oCredentials> credentialsStore;
 
   @Autowired
+  private ContainerBrokerOperations containerBrokerOperations;
+
+  @Autowired
   private H2oProvisionerRestApi h2oProvisionerRestApi;
 
   private Map<String, String> yarnConfig;
+
+  private ContainerBrokerMock containerBrokerMock;
 
   @Before
   public void setup() throws IOException {
@@ -93,6 +99,7 @@ public class H2oBrokerIntegrationTest {
     reset(h2oProvisionerRestApi);
     yarnConfig =
         confHelper.getConfigurationFromJson(conf.getYarnConfig(), ConfigurationLocator.HADOOP);
+    containerBrokerMock = (ContainerBrokerMock)containerBrokerOperations;
   }
 
   @Test
@@ -115,6 +122,11 @@ public class H2oBrokerIntegrationTest {
 
     freeze().until(() -> credentialsStore.getById(Location.newInstance(INSTANCE_ID)).get(),
         equalTo(CREDENTIALS));
+    ContainerBrokerMock.ContainerBrokerCallInfo callInfo =
+        containerBrokerMock.getCallHistory().get(containerBrokerMock.getCallHistory().size() - 1);
+    assertThat(callInfo.methodName, equalTo("addExpose"));
+    assertThat(callInfo.instanceId, equalTo(INSTANCE_ID));
+    assertThat(callInfo.body, equalTo("{\"ports\":[54321],\"hostname\":\"test-service-name\",\"ip\":\"10.0.0.1\"}"));
 
     verify(h2oProvisionerRestApi).createH2oInstance(eq(INSTANCE_ID), eq(conf.getH2oMapperNodes()),
             eq(conf.getH2oMapperMemory()), eq(true), eq(new H2oProvisionerRequestData(yarnConfig, USER_TOKEN)));
@@ -140,6 +152,10 @@ public class H2oBrokerIntegrationTest {
     // assert
     verify(h2oProvisionerRestApi, times(1)).deleteH2oInstance(INSTANCE_ID, yarnConfig, true);
     assertThat(instance.getServiceInstanceId(), equalTo(removedInstance.getServiceInstanceId()));
+    ContainerBrokerMock.ContainerBrokerCallInfo callInfo =
+        containerBrokerMock.getCallHistory().get(containerBrokerMock.getCallHistory().size() - 1);
+    assertThat(callInfo.methodName, equalTo("deleteExpose"));
+    assertThat(callInfo.instanceId, equalTo(INSTANCE_ID));
   }
 
   @Test
@@ -184,7 +200,7 @@ public class H2oBrokerIntegrationTest {
     // assert
     Map<String, Object> credentials = createdBinding.getCredentials();
     assertThat(createdBinding.getServiceInstanceId(), equalTo(INSTANCE_ID));
-    assertThat(credentials.get("hostname"), equalTo("http://h2o.com"));
+    assertThat(credentials.get("hostname"), equalTo("http://10.0.0.1"));
     assertThat(credentials.get("port"), equalTo("54321"));
     assertThat(credentials.get("username"), equalTo("user"));
     assertThat(credentials.get("password"), equalTo("pass"));

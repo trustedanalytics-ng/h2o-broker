@@ -14,7 +14,6 @@
 package org.trustedanalytics.servicebroker.h2o.nats;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 

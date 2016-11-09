@@ -19,6 +19,11 @@ catalog:
   login_key: login
   password_key: password
 
+containerbroker:
+  url: ${CONTAINERBROKER_URL:http://localhost:80}
+  user: ${CONTAINERBROKER_USER:admin}
+  password: ${CONTAINERBROKER_PASSWORD:password}
+
 nats:
   url: nats://localhost:4222
   serviceCreationTopic: ${NATS_SERVICE_CREATION_TOPIC:platform.create-service}

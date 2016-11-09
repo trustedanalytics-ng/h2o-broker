@@ -30,6 +30,7 @@ import org.trustedanalytics.cfbroker.store.api.BrokerStore;
 import org.trustedanalytics.cfbroker.store.api.Location;
 import org.trustedanalytics.servicebroker.h2o.nats.NatsNotifier;
 import org.trustedanalytics.servicebroker.h2o.nats.ServiceMetadata;
+import org.trustedanalytics.servicebroker.h2o.tapcontainerbroker.ContainerBrokerOperations;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
 import org.cloudfoundry.community.servicebroker.exception.ServiceBrokerException;
@@ -66,6 +67,9 @@ public class H2oServiceInstanceServiceTest {
   private BrokerStore<H2oCredentials> credentialsStoreMock;
 
   @Mock
+  private ContainerBrokerOperations containerBrokerOperationsMock;
+
+  @Mock
   private NatsNotifier natsNotifierMock;
 
   private long provisionerTimeout = 120;
@@ -76,7 +80,7 @@ public class H2oServiceInstanceServiceTest {
   @Before
   public void setup() {
     instanceService = new H2oServiceInstanceService(delegateMock, h2oProvisioner,
-        credentialsStoreMock, natsNotifierMock, provisionerTimeout);
+        credentialsStoreMock, containerBrokerOperationsMock, natsNotifierMock, provisionerTimeout);
   }
 
   @Test
@@ -85,12 +89,15 @@ public class H2oServiceInstanceServiceTest {
     CreateServiceInstanceRequest request =
         CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance expectedInstance = new ServiceInstance(request);
-    H2oCredentials expectedCredentials = new H2oCredentials("a", "b", "c", "d");
+    H2oCredentials expectedCredentials = new H2oCredentials("http://10.0.0.1", "8080", "c", "d");
+    String expectedExposeBody = "{\"ports\":[8080],\"hostname\":\"test-service-name\",\"ip\":\"10.0.0.1\"}";
 
     when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
     when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN)).thenReturn(expectedCredentials);
     doNothing().when(credentialsStoreMock).save(Location.newInstance(INSTANCE_ID),
         expectedCredentials);
+    when(containerBrokerOperationsMock.addExpose(INSTANCE_ID, expectedExposeBody))
+        .thenReturn(new String[0]);
 
     // act
     ServiceInstance createdInstance = instanceService.createServiceInstance(request);
@@ -101,6 +108,7 @@ public class H2oServiceInstanceServiceTest {
     verify(h2oProvisioner, timeout(200)).provisionInstance(INSTANCE_ID, USER_TOKEN);
     verify(credentialsStoreMock, timeout(200)).save(Location.newInstance(INSTANCE_ID),
         expectedCredentials);
+    verify(containerBrokerOperationsMock, timeout(200)).addExpose(INSTANCE_ID, expectedExposeBody);
   }
 
   @Test
@@ -179,11 +187,43 @@ public class H2oServiceInstanceServiceTest {
   }
 
   @Test
+  public void createServiceInstance_containerBrokerFails_exceptionThrownAndNatsNotified() throws Exception {
+    // arrange
+    CreateServiceInstanceRequest request =
+        CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
+    ServiceInstance expectedInstance = new ServiceInstance(request);
+    H2oCredentials expectedCredentials = new H2oCredentials("a", "b", "c", "d");
+    ServiceMetadata expectedMetadata = new ServiceMetadata(INSTANCE_ID,
+        request.getParameters().get("name").toString(), request.getOrganizationGuid());
+
+    when(delegateMock.createServiceInstance(request)).thenReturn(expectedInstance);
+    when(h2oProvisioner.provisionInstance(INSTANCE_ID, USER_TOKEN)).thenReturn(expectedCredentials);
+    doNothing().when(credentialsStoreMock).save(Location.newInstance(INSTANCE_ID),
+        expectedCredentials);
+    when(containerBrokerOperationsMock.addExpose(INSTANCE_ID, "test body"))
+        .thenThrow(new RuntimeException());
+
+    // act
+    // assert
+    try {
+      instanceService.createServiceInstance(request);
+    } catch (ServiceBrokerException e) {
+      assertSame(ServiceBrokerException.class, e.getClass());
+    }
+    ArgumentCaptor<ServiceMetadata> captor = ArgumentCaptor.forClass(ServiceMetadata.class);
+    verify(natsNotifierMock).notifyServiceCreationStarted(captor.capture());
+    verify(natsNotifierMock).notifyServiceCreationStatus(captor.capture(), any());
+    verify(credentialsStoreMock, timeout(200)).save(Location.newInstance(INSTANCE_ID),
+        expectedCredentials);
+    verifyServiceMetadata(expectedMetadata, captor.getValue());
+  }
+
+  @Test
   public void createServiceInstance_provisionerTimedOut_exceptionThrownAndNatsNotified()
       throws Exception {
     // arrange
     H2oServiceInstanceService instanceService2 = new H2oServiceInstanceService(delegateMock,
-        h2oProvisioner, credentialsStoreMock, natsNotifierMock, 1);
+        h2oProvisioner, credentialsStoreMock, containerBrokerOperationsMock, natsNotifierMock, 1);
     CreateServiceInstanceRequest request =
         CfBrokerRequestsFactory.getCreateInstanceRequest(INSTANCE_ID, USER_TOKEN);
     ServiceInstance expectedInstance = new ServiceInstance(request);
@@ -221,6 +261,25 @@ public class H2oServiceInstanceServiceTest {
 
     // assert
     verifyNoMoreInteractions(h2oProvisioner);
+  }
+
+  @Test
+  public void deleteServiceInstance_containerBrokerFails_exceptionThrown() throws Exception {
+    // arrange
+    DeleteServiceInstanceRequest request =
+        CfBrokerRequestsFactory.getDeleteServiceInstanceRequest(INSTANCE_ID);
+    ServiceInstance expectedInstance = new ServiceInstance(request);
+
+    when(delegateMock.deleteServiceInstance(request)).thenReturn(expectedInstance);
+    doThrow(new RuntimeException()).when(containerBrokerOperationsMock).deleteExpose(INSTANCE_ID);
+
+    // act
+    // assert
+    try {
+      instanceService.deleteServiceInstance(request);
+    } catch (ServiceBrokerException e) {
+      assertSame(ServiceBrokerException.class, e.getClass());
+    }
   }
 
   private H2oCredentials returnCredentialsLongRunning(H2oCredentials credentials)

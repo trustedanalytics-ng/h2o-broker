@@ -13,13 +13,13 @@
  */
 package org.trustedanalytics.servicebroker.h2o.tapcatalog;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
 
 import lombok.Getter;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Getter
 public class CatalogInstanceToCredentialsMapper {

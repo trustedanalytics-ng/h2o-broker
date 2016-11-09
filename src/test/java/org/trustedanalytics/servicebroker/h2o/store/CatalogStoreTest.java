@@ -17,21 +17,25 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder.HOSTNAME_KEY;
-import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder.PASSWORD_KEY;
-import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder.USER_KEY;
+import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder
+    .HOSTNAME_KEY;
+import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder
+    .PASSWORD_KEY;
+import static org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder
+    .USER_KEY;
 
-import java.io.IOException;
-import java.util.Optional;
-
-import org.junit.Before;
-import org.junit.Test;
 import org.trustedanalytics.cfbroker.store.api.Location;
 import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogInstanceToCredentialsMapper;
 import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogOperations;
 import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstance;
 import org.trustedanalytics.servicebroker.h2o.tapcatalog.CatalogServiceInstanceBuilder;
 import org.trustedanalytics.servicebroker.h2oprovisioner.rest.api.H2oCredentials;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Optional;
 
 public class CatalogStoreTest {
 

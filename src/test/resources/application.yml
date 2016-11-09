@@ -19,6 +19,11 @@ catalog:
   login_key: login
   password_key: password
 
+containerbroker:
+  url: fakeUrl
+  user: fakeUser
+  password: fakePassword
+
 nats:
   url: fakeUrl
   serviceCreationTopic: fakeTopic

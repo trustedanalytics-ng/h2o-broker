@@ -11,20 +11,16 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package org.trustedanalytics.servicebroker.h2o.tapcatalog;
+package org.trustedanalytics.servicebroker.h2o.tapcontainerbroker;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import feign.Param;
+import feign.RequestLine;
 
-import java.util.Collection;
+public interface ContainerBrokerOperations {
 
-@JsonIgnoreProperties({"id", "type", "classId", "state", "bindings"})
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class CatalogServiceInstance {
-  
-  private Collection<InstanceMetadata> metadata;
+  @RequestLine("POST /api/v1/service/{instanceId}/expose")
+  String[] addExpose(@Param("instanceId") String instanceId, String body);
+
+  @RequestLine("DELETE /api/v1/service/{instanceId}/expose")
+  void deleteExpose(@Param("instanceId") String instanceId);
 }

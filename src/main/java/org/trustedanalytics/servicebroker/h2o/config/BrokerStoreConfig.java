@@ -14,14 +14,15 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
-import java.io.IOException;
+import org.trustedanalytics.cfbroker.store.api.BrokerStore;
+import org.trustedanalytics.servicebroker.h2o.store.MapInMemoryStore;
 
 import org.cloudfoundry.community.servicebroker.model.CreateServiceInstanceBindingRequest;
 import org.cloudfoundry.community.servicebroker.model.ServiceInstance;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.trustedanalytics.cfbroker.store.api.BrokerStore;
-import org.trustedanalytics.servicebroker.h2o.store.MapInMemoryStore;
+
+import java.io.IOException;
 
 @Configuration
 public class BrokerStoreConfig {

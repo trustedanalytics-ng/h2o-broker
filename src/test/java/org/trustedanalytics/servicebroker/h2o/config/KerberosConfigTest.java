@@ -14,6 +14,10 @@
 
 package org.trustedanalytics.servicebroker.h2o.config;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.when;
+
 import org.trustedanalytics.hadoop.config.ConfigurationHelper;
 import org.trustedanalytics.hadoop.config.PropertyLocator;
 
@@ -25,10 +29,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.Optional;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class KerberosConfigTest {
