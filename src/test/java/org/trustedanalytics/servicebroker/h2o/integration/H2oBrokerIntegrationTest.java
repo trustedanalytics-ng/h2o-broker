@@ -152,10 +152,6 @@ public class H2oBrokerIntegrationTest {
     // assert
     verify(h2oProvisionerRestApi, times(1)).deleteH2oInstance(INSTANCE_ID, yarnConfig, true);
     assertThat(instance.getServiceInstanceId(), equalTo(removedInstance.getServiceInstanceId()));
-    ContainerBrokerMock.ContainerBrokerCallInfo callInfo =
-        containerBrokerMock.getCallHistory().get(containerBrokerMock.getCallHistory().size() - 1);
-    assertThat(callInfo.methodName, equalTo("deleteExpose"));
-    assertThat(callInfo.instanceId, equalTo(INSTANCE_ID));
   }
 
   @Test
