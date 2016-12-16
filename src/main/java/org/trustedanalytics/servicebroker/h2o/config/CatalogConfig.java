@@ -38,10 +38,10 @@ public class CatalogConfig {
   public Catalog catalog() {
     final String SERVICE_ID = configuration.getCfServiceId();
     final String SERVICE_NAME = configuration.getCfServiceName();
-    final String DESCRIPTION = "A simple h2o broker";
+    final String DESCRIPTION = "Comprehensive machine learning platform.";
     final boolean BINDABLE = true;
     final boolean UPDATEABLE = true;
-    final List<String> TAGS = Arrays.asList("data-science-tool");
+    final List<String> TAGS = Arrays.asList("h2o", "data-science", "tools", "machine-learning");
     final String SYSLOG_DRAIN = "syslog_drain";
     final DashboardClient NO_DASHBOARD = null;
 
@@ -51,9 +51,10 @@ public class CatalogConfig {
   }
 
   private List<Plan> getSharedPlans() {
-    final String ID = configuration.getCfBaseId() + "-shared-plan";
-    final String NAME = "shared";
-    final String DESCRIPTION = "This is a default h2o plan.";
+    final String ID = configuration.getCfBaseId() + "-simple-plan";
+    final String NAME = "simple";
+    final String DESCRIPTION =
+        "Create dedicated H2O 3.5.0 server. Resources used: 1 compute node, 512 MB RAM and storage on your organization's HDFS storage.";
     final Map<String, Object> NO_METADATA = null;
     final boolean FREE_PLAN = true;
 
