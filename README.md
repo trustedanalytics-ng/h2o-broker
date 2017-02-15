@@ -5,7 +5,7 @@ Cloud foundry broker for h2o. It spawns h2o instances on yarn.
 
 
 # How to use it?
-To use h2o-broker, you need to build it from sources configure, deploy, create instance and bind it to your app to get h2o credentials. Instead of binding h2o manually you can use [service-exposer](https://github.com/trustedanalytics/service-exposer). Follow steps described below.
+To use h2o-broker, you need to build it from sources configure, deploy, create instance and bind it to your app to get h2o credentials. Instead of binding h2o manually you can use [service-exposer](https://github.com/trustedanalytics-ng/service-exposer). Follow steps described below.
 
 
 ## Build
@@ -64,7 +64,7 @@ Broker configuration params list (environment properties):
       ```
       **Remember to put json in 'single quotes' and to escape all $ characters.**
 
-      You can use **import_hadoop_conf.sh** script available in admin tool kit https://github.com/trustedanalytics/hadoop-admin-tools. There are several ways to use of this util:
+      You can use **import_hadoop_conf.sh** script available in admin tool kit https://github.com/trustedanalytics-ng/hadoop-admin-tools. There are several ways to use of this util:
 
       Getting hadoop configuration directly from CDH manager.
       ```
